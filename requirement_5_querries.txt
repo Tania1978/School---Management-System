@@ -1,0 +1,149 @@
+
+// To see All Courses
+
+SELECT id AS CourseId, title AS Title, stream AS Stream, type AS Type, start_date AS "Start Date", end_date AS "End Date"
+FROM courses;
+
+// To see All Students
+
+SELECT id AS StudId, CONCAT(students.first_name,'  ', students.last_name) AS 'Name', date_of_birth AS "Date of Birth"
+FROM students;
+
+// To see All Trainers
+
+SELECT id AS TrainId, CONCAT(trainers.first_name,'  ', trainers.last_name) AS 'Name', subject AS Subject
+FROM trainers;
+
+// To see All Assignments
+
+SELECT id AS AssId, title AS Title, description AS Description, submission_date AS "Submision Date"
+FROM assignments;
+
+// to see All Trainers Per all Courses
+
+SELECT course_id AS CId, CONCAT(title,' ', stream,' ',type) AS Course, trainer_id AS TrId, CONCAT(first_name,'  ', last_name) AS Name, subject 
+FROM trainerspercourse tpc
+INNER JOIN trainers t ON t.id = tpc.trainer_id
+INNER JOIN courses c ON c.id = tpc.course_id
+ORDER BY course_id;
+
+
+//  STORED PROCEDURE to display the trainers in a course by selecting the course id.
+
+DELIMITER //
+CREATE PROCEDURE showTrainersPerCourse(IN courseId INT)
+BEGIN
+SELECT tpc.trainer_id AS TrainerId, CONCAT(first_name,'  ', last_name) AS Name, 
+subject, tpc.course_id AS Course
+FROM trainerspercourse tpc
+INNER JOIN courses c
+ON c.id = tpc.course_id
+INNER JOIN trainers t
+ON t.id=tpc.trainer_id
+WHERE c.id = courseId;
+END //
+DELIMITER ;
+
+CALL showTrainersPerCourse(1);
+
+// To see all students per all courses
+
+SELECT course_id AS CId, CONCAT(c.title,' ', c.stream,' ',c.type) AS Course, 
+student_id AS StId, CONCAT(s.first_name,'  ', s.last_name) AS Name, 
+date_of_birth AS DateOfBirth, 
+e.enrollment_date AS "Date Enrolled", 
+e.tuition_fees AS Fees
+FROM enrollments e
+INNER JOIN students s ON s.id = student_id
+INNER JOIN courses c ON c.id = course_id
+ORDER BY course_id,student_id ASC;
+
+// stored procedure to see students for a specific course
+
+DELIMITER //
+CREATE PROCEDURE showStudentsPerCourse(IN courseId INT)
+BEGIN
+SELECT course_id AS CId, CONCAT(c.title,' ', c.stream,' ',c.type) AS Course, 
+student_id AS StId, CONCAT(s.first_name,'  ', s.last_name) AS Name, 
+date_of_birth AS DateOfBirth, 
+e.enrollment_date AS "Date Enrolled", 
+e.tuition_fees AS Fees
+FROM enrollments e
+INNER JOIN students s ON s.id = student_id
+INNER JOIN courses c ON c.id = course_id
+HAVING course_id=courseId;
+END //
+DELIMITER ;
+
+CALL showStudentsPerCourse(2);
+
+// to see All the assignments per all courses
+
+SELECT a.id AS AssId, CONCAT(a.title, ' ', description) AS Assignment, 
+submission_date, 
+CONCAT(c.title,' ', c.stream,' ',c.type) AS Course
+FROM assignmentspercourse apc
+INNER JOIN assignments a ON a.id = apc.assignment_id
+INNER JOIN courses c ON c.id=apc.course_id
+ORDER BY a.id;
+
+// // stored procedure to see the assignments per specific course
+
+DELIMITER //
+CREATE PROCEDURE showAssignmentsPerCourse(IN courseId INT)
+BEGIN
+SELECT a.id AS AssId, CONCAT(a.title, ' ', description) AS Assignment, 
+submission_date, c.id AS CId, 
+CONCAT(c.title,' ', c.stream,' ',c.type) AS Course
+FROM assignmentspercourse apc
+INNER JOIN assignments a ON a.id = apc.assignment_id
+INNER JOIN courses c ON c.id = apc.course_id
+HAVING c.id =courseId;
+END //
+DELIMITER ;
+
+
+CALL showAssignmentsPerCourse(3);
+
+
+ // to see All the assignments per course per student
+
+SELECT c.id AS Course, sc.student_id AS 'StId', CONCAT(s.first_name,'  ', s.last_name) AS 'Student Name',
+a.id AS AssId, CONCAT(a.title, ' ', description) AS Assignment, a.submission_date AS SubDate, 
+sc.oral_grade AS 'Oral Mark', 
+sc.total_grade AS 'Total Mark'
+FROM scorescard sc
+INNER JOIN assignments a ON a.id = sc.assignment_id
+INNER JOIN courses c ON sc.course_id = c.id
+INNER JOIN students s ON sc.student_id = s.id
+ORDER BY sc.course_id, sc.student_id;
+
+// to see the assignments per student per specific course
+
+SELECT c.id AS Course, sc.student_id AS 'StId', CONCAT(s.first_name,'  ', s.last_name) AS 'Student Name',
+a.id AS AssId, CONCAT(a.title, ' ', description) AS Assignment, a.submission_date AS SubDate, 
+sc.oral_grade AS 'Oral Mark', 
+sc.total_grade AS 'Total Mark'
+FROM scorescard sc
+INNER JOIN assignments a ON a.id = sc.assignment_id
+INNER JOIN courses c ON sc.course_id = c.id
+INNER JOIN students s ON sc.student_id = s.id
+HAVING c.id = 1
+ORDER BY sc.student_id;
+
+
+//A list of students that belong to more than one courses
+
+SELECT e.student_id AS StudentId, CONCAT(s.first_name,'  ', s.last_name) AS 'Student Name',
+date_of_birth AS 'DateOfBirth', 
+COUNT(*) AS NumberOfCourses,
+SUM(e.tuition_fees) AS TotalFees  
+FROM enrollments e
+INNER JOIN students s ON s.id = student_id
+INNER JOIN courses c ON c.id = course_id
+GROUP BY student_id
+HAVING COUNT(*)>1
+ORDER BY student_id ASC;
+
+ 
+
